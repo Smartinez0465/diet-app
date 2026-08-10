@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "diet-app",
+    "slug": "diet-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0F172A"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.stevenmartinez.dietapp"
+    },
+    "android": {
+      "package": "com.stevenmartinez.dietapp",
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access camera to scan food barcodes."
+        }
+      ]
+    ]
+  }
+}
