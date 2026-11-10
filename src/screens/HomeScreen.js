@@ -1,10 +1,15 @@
 import { useCallback, useState } from "react";
-import { View, Text, StyleSheet, FlatList, Pressable } from "react-native";
+import { View, Text, StyleSheet, FlatList } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
-
-const DAILY_GOAL = 2200;
+import { DAILY_GOAL } from "../lib/goals";
+import { formatNumber } from "../lib/format";
+import { colors, spacing, type } from "../theme/brand";
+import Button from "../components/Button";
+import SummaryCard from "../components/SummaryCard";
+import MacroBar from "../components/MacroBar";
+import EntryRow from "../components/EntryRow";
 
 export default function HomeScreen({ navigation }) {
   const { session } = useAuth();
@@ -37,35 +42,44 @@ export default function HomeScreen({ navigation }) {
     }, [loadEntries])
   );
 
-  const totalCalories = entries.reduce((sum, e) => sum + e.calories, 0);
+  const sum = (key) => entries.reduce((total, e) => total + (e[key] || 0), 0);
+  const totalCalories = entries.reduce((total, e) => total + e.calories, 0);
   const remaining = DAILY_GOAL - totalCalories;
+  const over = remaining < 0;
+
+  const header = (
+    <View>
+      <SummaryCard
+        label="Today"
+        value={formatNumber(totalCalories)}
+        tone={over ? "over" : "ok"}
+        sub={
+          over
+            ? `${formatNumber(Math.abs(remaining))} kcal over`
+            : `${formatNumber(remaining)} kcal remaining`
+        }
+      />
+      <View style={styles.macros}>
+        <MacroBar protein={sum("protein")} carbs={sum("carbs")} fat={sum("fat")} />
+      </View>
+      <Button title="+ Log food" onPress={() => navigation.navigate("AddFood")} />
+      <Text style={styles.sectionTitle}>Today's entries</Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryLabel}>Today</Text>
-        <Text style={styles.summaryCalories}>{totalCalories} kcal</Text>
-        <Text style={styles.summarySub}>
-          {remaining >= 0 ? `${remaining} kcal remaining` : `${Math.abs(remaining)} kcal over`}
-        </Text>
-      </View>
-
-      <Pressable style={styles.addButton} onPress={() => navigation.navigate("AddFood")}>
-        <Text style={styles.addButtonText}>+ Log food</Text>
-      </Pressable>
-
-      <Text style={styles.sectionTitle}>Today's entries</Text>
       <FlatList
         data={entries}
         keyExtractor={(item) => String(item.id)}
+        ListHeaderComponent={header}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
         renderItem={({ item }) => (
-          <View style={styles.entryRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.entryName}>{item.food_name}</Text>
-              <Text style={styles.entryMeta}>{item.grams}g</Text>
-            </View>
-            <Text style={styles.entryCalories}>{item.calories} kcal</Text>
-          </View>
+          <EntryRow
+            title={item.food_name}
+            meta={`${item.grams} g`}
+            value={`${formatNumber(item.calories)} kcal`}
+          />
         )}
         ListEmptyComponent={<Text style={styles.emptyText}>No food logged yet today.</Text>}
       />
@@ -74,34 +88,13 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0F172A", padding: 20 },
-  summaryCard: {
-    backgroundColor: "#1E293B",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16
+  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.xl },
+  macros: { marginVertical: spacing.lg },
+  sectionTitle: {
+    ...type.section,
+    color: colors.ink,
+    marginTop: spacing.xl,
+    marginBottom: spacing.gap
   },
-  summaryLabel: { color: "#94A3B8", fontSize: 14 },
-  summaryCalories: { color: "#F8FAFC", fontSize: 36, fontWeight: "800", marginTop: 4 },
-  summarySub: { color: "#22C55E", fontSize: 14, marginTop: 4 },
-  addButton: {
-    backgroundColor: "#22C55E",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 20
-  },
-  addButtonText: { textAlign: "center", color: "#0F172A", fontWeight: "700", fontSize: 16 },
-  sectionTitle: { color: "#F8FAFC", fontSize: 16, fontWeight: "600", marginBottom: 10 },
-  entryRow: {
-    flexDirection: "row",
-    backgroundColor: "#1E293B",
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 8,
-    alignItems: "center"
-  },
-  entryName: { color: "#F8FAFC", fontSize: 15, fontWeight: "600" },
-  entryMeta: { color: "#94A3B8", fontSize: 13, marginTop: 2 },
-  entryCalories: { color: "#F8FAFC", fontSize: 15, fontWeight: "700" },
-  emptyText: { color: "#64748B", textAlign: "center", marginTop: 20 }
+  emptyText: { ...type.body, color: colors.inkMuted, textAlign: "center", marginTop: spacing.xl }
 });
