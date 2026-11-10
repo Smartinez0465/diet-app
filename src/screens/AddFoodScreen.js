@@ -48,7 +48,14 @@ export default function AddFoodScreen({ navigation }) {
   async function handleBarcodeScanned({ data }) {
     setScannerOpen(false);
     setLoading(true);
-    const product = await getFoodByBarcode(data);
+    let product = null;
+    try {
+      product = await getFoodByBarcode(data);
+    } catch (e) {
+      setLoading(false);
+      Alert.alert("Lookup failed", e.message);
+      return;
+    }
     setLoading(false);
     if (product) setSelected(product);
     else Alert.alert("Not found", "That barcode wasn't in the database.");
@@ -57,6 +64,10 @@ export default function AddFoodScreen({ navigation }) {
   async function logFood() {
     if (!selected) return;
     const gramsNum = parseFloat(grams) || 0;
+    if (gramsNum < 1 || gramsNum > 3000) {
+      Alert.alert("Check the amount", "Enter between 1 and 3000 grams.");
+      return;
+    }
     const factor = gramsNum / 100;
 
     const { error } = await supabase.from("food_logs").insert({
