@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, Text, ActivityIndicator, Pressable } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
+import { colors, spacing, type, MIN_TOUCH } from "../theme/brand";
 import LoginScreen from "../screens/LoginScreen";
 import HomeScreen from "../screens/HomeScreen";
 import AddFoodScreen from "../screens/AddFoodScreen";
@@ -14,21 +15,38 @@ const Tab = createBottomTabNavigator();
 
 function LogoutButton() {
   return (
-    <Pressable onPress={() => supabase.auth.signOut()} style={{ marginRight: 16 }}>
-      <Text style={{ color: "#22C55E", fontWeight: "600" }}>Log out</Text>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Log out"
+      onPress={() => supabase.auth.signOut()}
+      style={{
+        minHeight: MIN_TOUCH,
+        minWidth: MIN_TOUCH,
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: spacing.sm,
+        paddingHorizontal: spacing.sm
+      }}
+    >
+      <Text style={{ ...type.bodyStrong, color: colors.brand }}>Log out</Text>
     </Pressable>
   );
 }
+
+const headerOptions = {
+  headerStyle: { backgroundColor: colors.bg },
+  headerTintColor: colors.ink,
+  headerShadowVisible: false
+};
 
 function Tabs() {
   return (
     <Tab.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#0F172A" },
-        headerTintColor: "#F8FAFC",
-        tabBarStyle: { backgroundColor: "#0F172A" },
-        tabBarActiveTintColor: "#22C55E",
-        tabBarInactiveTintColor: "#64748B",
+        ...headerOptions,
+        tabBarStyle: { backgroundColor: colors.bg, borderTopWidth: 0 },
+        tabBarActiveTintColor: colors.brand,
+        tabBarInactiveTintColor: colors.inkMuted,
         headerRight: () => <LogoutButton />
       }}
     >
@@ -43,15 +61,15 @@ export default function AppNavigator() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0F172A" }}>
-        <ActivityIndicator color="#22C55E" size="large" />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg }}>
+        <ActivityIndicator color={colors.brand} size="large" accessibilityLabel="Loading" />
       </View>
     );
   }
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerStyle: { backgroundColor: "#0F172A" }, headerTintColor: "#F8FAFC" }}>
+      <Stack.Navigator screenOptions={headerOptions}>
         {!session ? (
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         ) : (

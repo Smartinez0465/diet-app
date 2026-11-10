@@ -3,6 +3,10 @@ import { View, Text, FlatList, StyleSheet } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
+import { DAILY_GOAL } from "../lib/goals";
+import { formatNumber } from "../lib/format";
+import { colors, spacing, type } from "../theme/brand";
+import EntryRow from "../components/EntryRow";
 
 export default function HistoryScreen() {
   const { session } = useAuth();
@@ -43,12 +47,18 @@ export default function HistoryScreen() {
       <FlatList
         data={days}
         keyExtractor={(item) => item.date}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.date}>{item.date}</Text>
-            <Text style={styles.total}>{item.total} kcal</Text>
-          </View>
-        )}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+        renderItem={({ item }) => {
+          const over = item.total > DAILY_GOAL;
+          return (
+            <EntryRow
+              title={item.date}
+              meta={over ? `${formatNumber(item.total - DAILY_GOAL)} kcal over goal` : undefined}
+              value={`${formatNumber(item.total)} kcal`}
+              valueColor={over ? colors.warning : colors.brand}
+            />
+          );
+        }}
         ListEmptyComponent={<Text style={styles.emptyText}>No history yet.</Text>}
       />
     </View>
@@ -56,16 +66,6 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0F172A", padding: 20 },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: "#1E293B",
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 8
-  },
-  date: { color: "#F8FAFC", fontSize: 15, fontWeight: "600" },
-  total: { color: "#22C55E", fontSize: 15, fontWeight: "700" },
-  emptyText: { color: "#64748B", textAlign: "center", marginTop: 20 }
+  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.xl },
+  emptyText: { ...type.body, color: colors.inkMuted, textAlign: "center", marginTop: spacing.xl }
 });
