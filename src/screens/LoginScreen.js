@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, Alert } from "react-native";
+import { View, Text, StyleSheet, Alert } from "react-native";
 import { supabase } from "../lib/supabase";
+import { colors, spacing, type } from "../theme/brand";
+import Button from "../components/Button";
+import TextField from "../components/TextField";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -20,49 +23,54 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{isSignUp ? "Create account" : "Welcome back"}</Text>
+      <Text accessibilityRole="header" style={styles.title}>
+        {isSignUp ? "Create account" : "Welcome back"}
+      </Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
+      <TextField
+        label="Email"
+        placeholder="you@example.com"
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
+        style={styles.field}
       />
-      <TextInput
-        style={styles.input}
+      <TextField
+        label="Password"
         placeholder="Password"
         secureTextEntry
         value={password}
         onChangeText={setPassword}
+        style={styles.field}
       />
 
-      <Pressable style={styles.button} onPress={handleSubmit} disabled={loading}>
-        <Text style={styles.buttonText}>{loading ? "..." : isSignUp ? "Sign up" : "Log in"}</Text>
-      </Pressable>
+      <Button
+        title={loading ? (isSignUp ? "Signing up…" : "Logging in…") : isSignUp ? "Sign up" : "Log in"}
+        onPress={handleSubmit}
+        disabled={loading}
+        style={styles.submit}
+      />
 
-      <Pressable onPress={() => setIsSignUp(!isSignUp)}>
-        <Text style={styles.switchText}>
-          {isSignUp ? "Already have an account? Log in" : "No account? Sign up"}
-        </Text>
-      </Pressable>
+      <Button
+        variant="text"
+        title={isSignUp ? "Already have an account? Log in" : "No account? Sign up"}
+        onPress={() => setIsSignUp(!isSignUp)}
+        style={styles.switch}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#0F172A" },
-  title: { fontSize: 28, fontWeight: "700", color: "#F8FAFC", marginBottom: 32, textAlign: "center" },
-  input: {
-    backgroundColor: "#1E293B",
-    color: "#F8FAFC",
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 12,
-    fontSize: 16
+  container: { flex: 1, justifyContent: "center", padding: spacing.xxl, backgroundColor: colors.bg },
+  title: {
+    ...type.title,
+    color: colors.ink,
+    marginBottom: spacing.xxxl,
+    textAlign: "center"
   },
-  button: { backgroundColor: "#22C55E", borderRadius: 10, padding: 16, marginTop: 8 },
-  buttonText: { textAlign: "center", color: "#0F172A", fontWeight: "700", fontSize: 16 },
-  switchText: { textAlign: "center", color: "#94A3B8", marginTop: 20 }
+  field: { marginBottom: spacing.md },
+  submit: { marginTop: spacing.sm },
+  switch: { marginTop: spacing.lg }
 });
