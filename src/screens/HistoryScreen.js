@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { View, Text, FlatList, StyleSheet } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { localDayKey } from "../lib/dates";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
@@ -20,7 +21,7 @@ export default function HistoryScreen() {
 
     const grouped = {};
     for (const entry of data) {
-      const day = entry.logged_at.slice(0, 10);
+      const day = localDayKey(entry.logged_at);
       if (!grouped[day]) grouped[day] = 0;
       grouped[day] += entry.calories;
     }
