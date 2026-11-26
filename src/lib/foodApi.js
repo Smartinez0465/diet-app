@@ -16,10 +16,11 @@ export async function searchFoods(query) {
   const data = await res.json();
 
   // Drop products with no usable calorie data so they can't be logged as 0 kcal.
+  // A declared 0 (water, diet soda) is real data and stays.
   return (data.products || [])
     .filter((p) => p.product_name && p.nutriments)
     .map((p) => normalizeProduct(p))
-    .filter((f) => f.caloriesPer100g > 0);
+    .filter((f) => f.caloriesPer100g !== null);
 }
 
 export async function getFoodByBarcode(barcode) {
@@ -28,20 +29,40 @@ export async function getFoodByBarcode(barcode) {
   const data = await res.json();
   if (data.status !== 1) return null;
   const food = normalizeProduct(data.product);
-  return food.caloriesPer100g > 0 ? food : null;
+  return food.caloriesPer100g !== null ? food : null;
+}
+
+// Open Food Facts values can be numbers, numeric strings, blank or absent.
+function toNumber(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+// kcal per 100 g, or null when the product has no usable energy data.
+function energyKcal(n, macroKcal) {
+  // Fall back to kJ (1 kcal = 4.184 kJ) when kcal is missing.
+  const kj = toNumber(n["energy_100g"]);
+  const kcal = toNumber(n["energy-kcal_100g"]) ?? (kj === null ? null : kj / 4.184);
+  if (kcal === null) return null;
+  // 0 kcal next to real macros is bad data, not a zero-calorie food.
+  if (kcal === 0 && macroKcal > 5) return null;
+  return Math.round(kcal);
 }
 
 function normalizeProduct(p) {
   const n = p.nutriments || {};
-  // Fall back to kJ (1 kcal = 4.184 kJ) when kcal is missing.
-  const kcal = n["energy-kcal_100g"] ?? (n["energy_100g"] ? n["energy_100g"] / 4.184 : 0);
+  // Macros stay unrounded; AddFoodScreen rounds after scaling by grams.
+  const protein = toNumber(n["proteins_100g"]) ?? 0;
+  const carbs = toNumber(n["carbohydrates_100g"]) ?? 0;
+  const fat = toNumber(n["fat_100g"]) ?? 0;
   return {
     id: p.code || p._id || p.id,
     name: String(p.product_name).trim().replace(/\s+/g, " "),
     brand: p.brands || "",
-    caloriesPer100g: Math.round(Number(kcal) || 0),
-    proteinPer100g: Math.round(n["proteins_100g"] || 0),
-    carbsPer100g: Math.round(n["carbohydrates_100g"] || 0),
-    fatPer100g: Math.round(n["fat_100g"] || 0)
+    caloriesPer100g: energyKcal(n, protein * 4 + carbs * 4 + fat * 9),
+    proteinPer100g: protein,
+    carbsPer100g: carbs,
+    fatPer100g: fat
   };
 }
