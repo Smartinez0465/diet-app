@@ -23,6 +23,9 @@ export default function AddFoodScreen({ navigation }) {
   const [grams, setGrams] = useState("100");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
+  // Mutable flags that survive re-renders. Taps and camera callbacks can fire
+  // again before React re-renders, so state alone can't block repeats.
+  const [lock] = useState(() => ({ saving: false, scanned: false }));
 
   async function handleSearch() {
     if (!query.trim()) return;
@@ -37,6 +40,7 @@ export default function AddFoodScreen({ navigation }) {
   }
 
   async function openScanner() {
+    lock.scanned = false;
     let currentPermission = permission;
     if (!currentPermission || !currentPermission.granted) {
       currentPermission = await requestPermission();
@@ -46,6 +50,8 @@ export default function AddFoodScreen({ navigation }) {
   }
 
   async function handleBarcodeScanned({ data }) {
+    if (lock.scanned) return;
+    lock.scanned = true;
     setScannerOpen(false);
     setLoading(true);
     const product = await getFoodByBarcode(data);
@@ -59,6 +65,8 @@ export default function AddFoodScreen({ navigation }) {
     const gramsNum = parseFloat(grams) || 0;
     const factor = gramsNum / 100;
 
+    if (lock.saving) return;
+    lock.saving = true;
     const { error } = await supabase.from("food_logs").insert({
       user_id: session.user.id,
       food_name: selected.name,
@@ -70,8 +78,10 @@ export default function AddFoodScreen({ navigation }) {
       logged_at: new Date().toISOString()
     });
 
-    if (error) Alert.alert("Error", error.message);
-    else navigation.goBack();
+    if (error) {
+      lock.saving = false;
+      Alert.alert("Error", error.message);
+    } else navigation.goBack();
   }
 
   if (selected) {
