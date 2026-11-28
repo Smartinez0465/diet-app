@@ -1,3 +1,4 @@
+import { AppState } from "react-native";
 import { useCallback, useState } from "react";
 import { View, Text, StyleSheet, FlatList, Pressable } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
@@ -34,6 +35,12 @@ export default function HomeScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       loadEntries();
+      // Returning from the background doesn't change focus, so reload then too.
+      // Otherwise yesterday's entries can stay under "Today".
+      const subscription = AppState.addEventListener("change", (state) => {
+        if (state === "active") loadEntries();
+      });
+      return () => subscription.remove();
     }, [loadEntries])
   );
 
